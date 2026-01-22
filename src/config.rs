@@ -65,9 +65,23 @@ pub struct SecretFile {
     pub path: PathBuf,
     /// Name of the secret to store / retrieve the file based on
     pub secret: String,
+    /// Additional secret metadata to use when pushing secrets
+    pub metadata: SecretMetadata,
+}
+
+#[derive(Deserialize, Default, Debug)]
+#[serde(default)]
+pub struct SecretMetadata {
     /// Optional description of the secret, this will be attached
     /// to the secret if using the AWS backend
+    ///
+    /// Will only be used on the first creation push
     pub description: Option<String>,
+
+    /// Optional tags to attach to the secret (AWS Backend)
+    ///
+    /// Will only be used on the first creation push
+    pub tags: Option<HashMap<String, String>>,
 }
 
 /// Name for the secrets config file

@@ -1,4 +1,7 @@
-use crate::{config::AwsConfig, secret::SecretManagerImpl};
+use crate::{
+    config::{AwsConfig, SecretMetadata},
+    secret::SecretManagerImpl,
+};
 use aws_config::{
     BehaviorVersion, Region,
     meta::region::{ProvideRegion, RegionProviderChain},
@@ -6,6 +9,7 @@ use aws_config::{
 use aws_sdk_secretsmanager::{
     config::{Credentials, SharedCredentialsProvider},
     primitives::Blob,
+    types::Tag,
 };
 use eyre::Context;
 
@@ -89,19 +93,26 @@ impl SecretManagerImpl for AwsSecretManager {
         &self,
         name: &str,
         value: Secret,
-        description: Option<String>,
+        metadata: &SecretMetadata,
     ) -> eyre::Result<()> {
         let (secret_binary, secret_string) = match value {
             Secret::String(value) => (None, Some(value)),
             Secret::Binary(items) => (Some(Blob::new(items)), None),
         };
 
+        let tags = metadata.tags.as_ref().map(|tags| {
+            tags.iter()
+                .map(|(key, value)| Tag::builder().key(key).value(value).build())
+                .collect::<Vec<_>>()
+        });
+
         let error = match self
             .client
             .create_secret()
             .set_secret_binary(secret_binary.clone())
             .set_secret_string(secret_string.clone())
-            .set_description(description.clone())
+            .set_description(metadata.description.clone())
+            .set_tags(tags)
             .name(name)
             .send()
             .await
@@ -121,7 +132,6 @@ impl SecretManagerImpl for AwsSecretManager {
                 .update_secret()
                 .set_secret_binary(secret_binary)
                 .set_secret_string(secret_string)
-                .set_description(description.clone())
                 .secret_id(name)
                 .send()
                 .await

@@ -1,5 +1,5 @@
 use crate::{
-    config::{BackendProvider, Config},
+    config::{BackendProvider, Config, SecretMetadata},
     secret::aws::AwsSecretManager,
 };
 
@@ -30,10 +30,10 @@ impl SecretManager {
         &self,
         name: &str,
         value: Secret,
-        description: Option<String>,
+        metadata: &SecretMetadata,
     ) -> eyre::Result<()> {
         match self {
-            SecretManager::Aws(secret) => secret.set_secret(name, value, description).await,
+            SecretManager::Aws(secret) => secret.set_secret(name, value, metadata).await,
         }
     }
 }
@@ -50,6 +50,6 @@ pub(crate) trait SecretManagerImpl {
         &self,
         name: &str,
         value: Secret,
-        description: Option<String>,
+        metadata: &SecretMetadata,
     ) -> eyre::Result<()>;
 }
