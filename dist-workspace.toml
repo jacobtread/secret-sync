@@ -19,3 +19,5 @@ npm-package = "secret-sync"
 install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = true
+# Publish jobs to run in CI
+publish-jobs = ["npm"]
