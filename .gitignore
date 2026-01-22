@@ -2,4 +2,4 @@
 
 *.env*
 
-secret-sync.toml
+/secret-sync.toml

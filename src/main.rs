@@ -1,13 +1,19 @@
+use crate::{
+    config::{SecretFile, discover_nearest_config_file, read_config_file},
+    pull::{pull_secret_file, pull_secret_files},
+    push::{push_secret_file, push_secret_files},
+    secret::SecretManager,
+};
 use clap::{Parser, Subcommand, ValueEnum};
 use eyre::{Context, ContextCompat};
 use serde_json::json;
-use std::{env::current_dir, path::PathBuf};
+use std::path::{PathBuf, absolute};
 use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::config::{discover_nearest_config_file, read_config_file};
-
 mod config;
+mod pull;
+mod push;
 mod secret;
 
 #[derive(Parser)]
@@ -93,7 +99,7 @@ async fn app(args: Args) -> eyre::Result<()> {
         .with(
             EnvFilter::from_default_env()
                 // Provide logging from secret-sync by default
-                .add_directive("secret-sync=info".parse()?)
+                .add_directive("secret_sync=info".parse()?)
                 //
                 .add_directive("aws_sdk_secretsmanager=info".parse()?)
                 .add_directive("aws_runtime=info".parse()?)
@@ -115,10 +121,128 @@ async fn app(args: Args) -> eyre::Result<()> {
         None => discover_nearest_config_file().await?,
     };
 
+    let config_path = absolute(config_path).context("failed to get absolute config path")?;
+
+    tracing::debug!(?config_path, "found config file");
+
     let config = read_config_file(&config_path).await?;
 
+    let secret = SecretManager::from_config(&config).await?;
+
+    let working_path = config_path
+        .parent()
+        .context("missing config parent path unable to use directory for context")?;
+
+    tracing::debug!(?working_path, "working path");
+
     match args.command {
-        Commands::Pull { file } => Ok(()),
-        Commands::Push { file } => Ok(()),
+        Commands::Pull { file } => match file {
+            Some(file_name) => {
+                let (_name, file) = config
+                    .files
+                    .iter()
+                    .find(|(key, _)| (**key).eq(&file_name))
+                    .with_context(|| {
+                        format!(
+                            "file \"{}\" not found in \"{}\"",
+                            file_name,
+                            config_path.display()
+                        )
+                    })?;
+
+                pull_secret_file(&secret, working_path, file).await?;
+
+                match args.format {
+                    OutputFormat::Human => {
+                        println!("successfully pulled secret \"{}\"", file_name);
+                    }
+                    OutputFormat::Json => {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&json!({
+                                "success": true
+                            }))?
+                        );
+                    }
+                }
+
+                Ok(())
+            }
+            None => {
+                let files = config.files.values().collect::<Vec<&SecretFile>>();
+                let total_files = files.len();
+                pull_secret_files(&secret, working_path, files).await?;
+
+                match args.format {
+                    OutputFormat::Human => {
+                        println!("successfully pulled {} secret file(s)", total_files);
+                    }
+                    OutputFormat::Json => {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&json!({
+                                "success": true
+                            }))?
+                        );
+                    }
+                }
+
+                Ok(())
+            }
+        },
+        Commands::Push { file } => match file {
+            Some(file_name) => {
+                let (_name, file) = config
+                    .files
+                    .iter()
+                    .find(|(key, _)| (**key).eq(&file_name))
+                    .with_context(|| {
+                        format!(
+                            "file \"{}\" not found in \"{}\"",
+                            file_name,
+                            config_path.display()
+                        )
+                    })?;
+
+                push_secret_file(&secret, working_path, file).await?;
+
+                match args.format {
+                    OutputFormat::Human => {
+                        println!("successfully pushed secret \"{}\"", file_name);
+                    }
+                    OutputFormat::Json => {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&json!({
+                                "success": true
+                            }))?
+                        );
+                    }
+                }
+
+                Ok(())
+            }
+            None => {
+                let files = config.files.values().collect::<Vec<&SecretFile>>();
+                let total_files = files.len();
+                push_secret_files(&secret, working_path, files).await?;
+
+                match args.format {
+                    OutputFormat::Human => {
+                        println!("successfully pushed {} secret file(s)", total_files);
+                    }
+                    OutputFormat::Json => {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&json!({
+                                "success": true
+                            }))?
+                        );
+                    }
+                }
+
+                Ok(())
+            }
+        },
     }
 }

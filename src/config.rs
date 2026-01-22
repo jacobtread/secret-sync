@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     env::current_dir,
     path::{Path, PathBuf},
 };
@@ -10,10 +11,26 @@ use serde::Deserialize;
 #[derive(Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
+    /// Config deciding which backend to use
+    pub backend: BackendConfig,
     /// AWS specific configuration
     pub aws: AwsConfig,
     /// The secret files to operate on
-    pub files: Vec<SecretFile>,
+    pub files: HashMap<String, SecretFile>,
+}
+
+/// Config around the secrets backend to use
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct BackendConfig {
+    pub provider: BackendProvider,
+}
+
+/// Provider to use for secrets
+#[derive(Deserialize, Default, Clone, Copy)]
+pub enum BackendProvider {
+    #[default]
+    Aws,
 }
 
 /// AWS specific configuration
@@ -21,6 +38,24 @@ pub struct Config {
 pub struct AwsConfig {
     /// AWS profile to use the sdk with
     pub profile: Option<String>,
+
+    /// Optionally override the AWS region
+    pub region: Option<String>,
+
+    /// Custom override for the AWS secret manager endpoint
+    pub endpoint: Option<String>,
+
+    /// Custom AWS credentials to use
+    pub credentials: Option<AwsCredentials>,
+}
+
+/// AWS credentials
+#[derive(Deserialize)]
+pub struct AwsCredentials {
+    /// AWS access key
+    pub access_key_id: String,
+    /// AWS access secret
+    pub access_key_secret: String,
 }
 
 /// The secret file instance
@@ -32,6 +67,7 @@ pub struct SecretFile {
     pub secret: String,
 }
 
+/// Name for the secrets config file
 const CONFIG_FILE_NAME: &str = "secret-sync.toml";
 
 /// Searches for the nearest configuration file, checks the current
@@ -58,12 +94,14 @@ pub async fn discover_nearest_config_file() -> eyre::Result<PathBuf> {
     }
 }
 
-pub fn parse_config_file(file: &[u8]) -> eyre::Result<Config> {
-    serde_json::from_slice(file).context("failed to parse config file")
+/// Parse a config file from bytes of the TOML file
+fn parse_config_file(file: &[u8]) -> eyre::Result<Config> {
+    toml::from_slice(file).context("failed to parse config file")
 }
 
-pub async fn read_config_file(file: &Path) -> eyre::Result<Config> {
-    let value = tokio::fs::read(file)
+/// Read a TOML config file from the provided `path`
+pub async fn read_config_file(path: &Path) -> eyre::Result<Config> {
+    let value = tokio::fs::read(path)
         .await
         .context("failed to read config file")?;
     parse_config_file(&value)
