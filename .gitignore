@@ -1,1 +1,5 @@
 /target
+
+*.env*
+
+secret-sync.toml
