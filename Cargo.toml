@@ -16,9 +16,6 @@ license = false
 eula = false
 
 [dependencies]
-# Environment variables
-dotenvy = "=0.15.7"
-
 # Command line parser
 clap = { version = "4.5.54", features = ["derive"] }
 
@@ -41,10 +38,11 @@ aws-config = { version = "=1.8.12", features = ["behavior-version-latest"] }
 
 # AWS Secrets Manager SDK
 aws-sdk-secretsmanager = "=1.98.0"
-toml = {version = "0.9.11", features = ["preserve_order"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-futures = "0.3.31"
+
+# Serialization
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.149"
+toml = {version = "=0.9.11", features = ["preserve_order"] }
 
 # The profile that 'dist' will build with
 [profile.dist]
