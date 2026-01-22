@@ -1,12 +1,14 @@
 use crate::{
     config::SecretFile,
+    fs::FileSystem,
     secret::{Secret, SecretManager},
 };
 use eyre::Context;
 use std::path::Path;
 
 /// Upload a secret file to the secret manager
-pub async fn push_secret_file(
+pub async fn push_secret_file<Fs: FileSystem>(
+    fs: &Fs,
     secret: &SecretManager,
     working_path: &Path,
     file: &SecretFile,
@@ -17,13 +19,7 @@ pub async fn push_secret_file(
         working_path.join(file.path.clone())
     };
 
-    if !file_path.exists() {
-        eyre::bail!("cannot push secret, file does not exist");
-    }
-
-    let value = tokio::fs::read(&file_path)
-        .await
-        .context("failed to read secret file")?;
+    let value = fs.read_file(&file_path).await?;
 
     let value = match String::from_utf8(value) {
         Ok(value) => Secret::String(value),
@@ -39,13 +35,14 @@ pub async fn push_secret_file(
 }
 
 /// Upload a collection of secret files to the secret manager
-pub async fn push_secret_files(
+pub async fn push_secret_files<Fs: FileSystem>(
+    fs: &Fs,
     secret: &SecretManager,
     working_path: &Path,
     files: Vec<&SecretFile>,
 ) -> eyre::Result<()> {
     for file in files {
-        push_secret_file(secret, working_path, file).await?;
+        push_secret_file(fs, secret, working_path, file).await?;
     }
 
     Ok(())

@@ -1,5 +1,6 @@
 use crate::{
     config::{SecretFile, discover_nearest_config_file, read_config_file},
+    fs::real::RealFs,
     pull::{pull_secret_file, pull_secret_files},
     push::{push_secret_file, push_secret_files},
     secret::SecretManager,
@@ -12,6 +13,7 @@ use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 mod config;
+mod fs;
 mod pull;
 mod push;
 mod secret;
@@ -135,6 +137,8 @@ async fn app(args: Args) -> eyre::Result<()> {
 
     tracing::debug!(?working_path, "working path");
 
+    let fs = RealFs;
+
     match args.command {
         Commands::Pull { file } => match file {
             Some(file_name) => {
@@ -150,7 +154,7 @@ async fn app(args: Args) -> eyre::Result<()> {
                         )
                     })?;
 
-                pull_secret_file(&secret, working_path, file).await?;
+                pull_secret_file(&fs, &secret, working_path, file).await?;
 
                 match args.format {
                     OutputFormat::Human => {
@@ -171,7 +175,7 @@ async fn app(args: Args) -> eyre::Result<()> {
             None => {
                 let files = config.files.values().collect::<Vec<&SecretFile>>();
                 let total_files = files.len();
-                pull_secret_files(&secret, working_path, files).await?;
+                pull_secret_files(&fs, &secret, working_path, files).await?;
 
                 match args.format {
                     OutputFormat::Human => {
@@ -204,7 +208,7 @@ async fn app(args: Args) -> eyre::Result<()> {
                         )
                     })?;
 
-                push_secret_file(&secret, working_path, file).await?;
+                push_secret_file(&fs, &secret, working_path, file).await?;
 
                 match args.format {
                     OutputFormat::Human => {
@@ -225,7 +229,7 @@ async fn app(args: Args) -> eyre::Result<()> {
             None => {
                 let files = config.files.values().collect::<Vec<&SecretFile>>();
                 let total_files = files.len();
-                push_secret_files(&secret, working_path, files).await?;
+                push_secret_files(&fs, &secret, working_path, files).await?;
 
                 match args.format {
                     OutputFormat::Human => {
