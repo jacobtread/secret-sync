@@ -85,7 +85,12 @@ impl SecretManagerImpl for AwsSecretManager {
         eyre::bail!("no valid secret found for \"{name}\" ")
     }
 
-    async fn set_secret(&self, name: &str, value: Secret) -> eyre::Result<()> {
+    async fn set_secret(
+        &self,
+        name: &str,
+        value: Secret,
+        description: Option<String>,
+    ) -> eyre::Result<()> {
         let (secret_binary, secret_string) = match value {
             Secret::String(value) => (None, Some(value)),
             Secret::Binary(items) => (Some(Blob::new(items)), None),
@@ -96,6 +101,7 @@ impl SecretManagerImpl for AwsSecretManager {
             .create_secret()
             .set_secret_binary(secret_binary.clone())
             .set_secret_string(secret_string.clone())
+            .set_description(description.clone())
             .name(name)
             .send()
             .await
@@ -115,6 +121,7 @@ impl SecretManagerImpl for AwsSecretManager {
                 .update_secret()
                 .set_secret_binary(secret_binary)
                 .set_secret_string(secret_string)
+                .set_description(description.clone())
                 .secret_id(name)
                 .send()
                 .await

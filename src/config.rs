@@ -65,6 +65,9 @@ pub struct SecretFile {
     pub path: PathBuf,
     /// Name of the secret to store / retrieve the file based on
     pub secret: String,
+    /// Optional description of the secret, this will be attached
+    /// to the secret if using the AWS backend
+    pub description: Option<String>,
 }
 
 /// Name for the secrets config file

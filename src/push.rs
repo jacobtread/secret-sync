@@ -31,7 +31,7 @@ pub async fn push_secret_file(
     };
 
     secret
-        .set_secret(&file.secret, value)
+        .set_secret(&file.secret, value, file.description.clone())
         .await
         .context("failed to store secret")?;
 

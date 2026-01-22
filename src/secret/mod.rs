@@ -26,9 +26,14 @@ impl SecretManager {
     }
 
     #[tracing::instrument(skip(self, value))]
-    pub async fn set_secret(&self, name: &str, value: Secret) -> eyre::Result<()> {
+    pub async fn set_secret(
+        &self,
+        name: &str,
+        value: Secret,
+        description: Option<String>,
+    ) -> eyre::Result<()> {
         match self {
-            SecretManager::Aws(secret) => secret.set_secret(name, value).await,
+            SecretManager::Aws(secret) => secret.set_secret(name, value, description).await,
         }
     }
 }
@@ -41,5 +46,10 @@ pub enum Secret {
 pub(crate) trait SecretManagerImpl {
     async fn get_secret(&self, name: &str) -> eyre::Result<Secret>;
 
-    async fn set_secret(&self, name: &str, value: Secret) -> eyre::Result<()>;
+    async fn set_secret(
+        &self,
+        name: &str,
+        value: Secret,
+        description: Option<String>,
+    ) -> eyre::Result<()>;
 }
