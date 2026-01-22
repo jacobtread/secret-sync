@@ -3,7 +3,7 @@ name = "secret-sync"
 version = "0.1.0"
 edition = "2024"
 authors = ["Jacobtread <jacobtread@gmail.com>"]
-repository = "https://github.com/docbox-nz/docbox-cli"
+repository = "https://github.com/jacobtread/secret-sync"
 readme = "./README.md"
 license = "MIT"
 
