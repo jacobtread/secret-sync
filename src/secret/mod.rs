@@ -4,9 +4,26 @@ use mockall::automock;
 
 pub mod aws;
 
+#[derive(Clone, PartialEq)]
 pub enum Secret {
     String(String),
     Binary(Vec<u8>),
+}
+
+impl Secret {
+    pub fn as_bytes(&self) -> &[u8] {
+        match self {
+            Secret::String(value) => value.as_bytes(),
+            Secret::Binary(value) => value,
+        }
+    }
+
+    pub fn into_bytes(&self) -> Vec<u8> {
+        match self {
+            Secret::String(value) => value.clone().into_bytes(),
+            Secret::Binary(value) => value.clone(),
+        }
+    }
 }
 
 #[automock]
