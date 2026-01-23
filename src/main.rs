@@ -54,9 +54,13 @@ pub enum OutputFormat {
 
 #[derive(clap::Args, Clone)]
 pub struct TargetFilter {
-    /// Optionally specify the specific secret file name
+    /// Optionally specify file names to match
     #[arg(short, long)]
-    file: Option<String>,
+    file: Option<Vec<String>>,
+
+    /// Optionally specify globs for file names to match
+    #[arg(short, long)]
+    glob: Option<Vec<String>>,
 }
 
 #[derive(Subcommand)]
@@ -233,15 +237,23 @@ fn filter_files<'a>(
     files
         .iter()
         .filter(|(name, _file)| {
-            if filter
-                .file
-                .as_ref()
-                .is_some_and(|file_name| (**name).ne(file_name))
-            {
-                return false;
+            // Nothing to filter against
+            if filter.file.is_none() && filter.glob.is_none() {
+                return true;
             }
 
-            true
+            let name_matches = filter
+                .file
+                .as_ref()
+                .is_some_and(|file_names| file_names.contains(name));
+
+            let glob_matches = filter.glob.as_ref().is_some_and(|globs| {
+                globs
+                    .iter()
+                    .any(|glob| fast_glob::glob_match(glob.as_bytes(), name.as_bytes()))
+            });
+
+            name_matches || glob_matches
         })
         .map(|(_key, value)| value)
         .collect()

@@ -50,6 +50,9 @@ toml = {version = "=0.9.11", features = ["preserve_order"] }
 # Automatic mock generation for tests
 mockall = "0.14.0"
 
+# Glob matching
+fast-glob = "1.0.0"
+
 [dev-dependencies]
 # Test containers for integration tests
 testcontainers = "=0.26.3"
