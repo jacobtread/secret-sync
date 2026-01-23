@@ -1,3 +1,8 @@
+//! # AWS
+//!
+//! Secret manager backed by AWS secret manager and compatible secret
+//! managers
+
 use super::Secret;
 use crate::{
     config::{AwsConfig, SecretMetadata},
@@ -20,6 +25,7 @@ pub struct AwsSecretManager {
 }
 
 impl AwsSecretManager {
+    /// Create a [AwsSecretManager] from the provided `config`
     pub async fn from_config(config: &AwsConfig) -> eyre::Result<AwsSecretManager> {
         // Setup the region provider
         let region_provider: Box<dyn ProvideRegion> = match config.region.as_ref() {

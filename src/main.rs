@@ -68,13 +68,26 @@ pub enum Commands {
     },
 }
 
+struct Output {
+    text: String,
+    json: serde_json::Value,
+}
+
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
     let args = Args::parse();
     let format = args.format.clone();
 
-    if let Err(error) = app(args).await {
-        match format {
+    match app(args).await {
+        Ok(output) => match format {
+            OutputFormat::Human => {
+                println!("{}", output.text);
+            }
+            OutputFormat::Json => {
+                println!("{}", serde_json::to_string_pretty(&output.json)?);
+            }
+        },
+        Err(error) => match format {
             OutputFormat::Human => {
                 return Err(error);
             }
@@ -84,24 +97,20 @@ async fn main() -> eyre::Result<()> {
                 println!(
                     "{}",
                     serde_json::to_string(&json!({
+                        "success": false,
                         "error": error.to_string()
                     }))?
                 );
 
                 return Err(error);
             }
-        }
+        },
     }
 
     Ok(())
 }
 
-async fn app(args: Args) -> eyre::Result<()> {
-    if !args.disable_color {
-        // Setup colorful error logging
-        color_eyre::install()?;
-    }
-
+fn init_logging() -> eyre::Result<()> {
     let indicatif_layer = IndicatifLayer::new();
 
     tracing_subscriber::registry()
@@ -124,6 +133,17 @@ async fn app(args: Args) -> eyre::Result<()> {
         )
         .with(indicatif_layer)
         .init();
+
+    Ok(())
+}
+
+async fn app(args: Args) -> eyre::Result<Output> {
+    if !args.disable_color {
+        // Setup colorful error logging
+        color_eyre::install()?;
+    }
+
+    init_logging()?;
 
     let config_path = match args.config {
         Some(value) => value,
@@ -151,110 +171,66 @@ async fn app(args: Args) -> eyre::Result<()> {
     match args.command {
         Commands::Pull { file } => match file {
             Some(file_name) => {
-                let (_name, file) = config
-                    .files
-                    .iter()
-                    .find(|(key, _)| (**key).eq(&file_name))
-                    .with_context(|| {
-                        format!(
-                            "file \"{}\" not found in \"{}\"",
-                            file_name,
-                            config_path.display()
-                        )
-                    })?;
+                let file = config.files.get(&file_name).with_context(|| {
+                    format!(
+                        "file \"{}\" not found in \"{}\"",
+                        file_name,
+                        config_path.display()
+                    )
+                })?;
 
                 pull_secret_file(&fs, secret.as_ref(), working_path, file).await?;
 
-                match args.format {
-                    OutputFormat::Human => {
-                        println!("successfully pulled secret \"{}\"", file_name);
-                    }
-                    OutputFormat::Json => {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&json!({
-                                "success": true
-                            }))?
-                        );
-                    }
-                }
-
-                Ok(())
+                Ok(Output {
+                    text: format!("successfully pulled secret \"{}\"", file_name),
+                    json: json!({
+                        "success": true
+                    }),
+                })
             }
             None => {
                 let files = config.files.values().collect::<Vec<&SecretFile>>();
                 let total_files = files.len();
                 pull_secret_files(&fs, secret.as_ref(), working_path, files).await?;
 
-                match args.format {
-                    OutputFormat::Human => {
-                        println!("successfully pulled {} secret file(s)", total_files);
-                    }
-                    OutputFormat::Json => {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&json!({
-                                "success": true
-                            }))?
-                        );
-                    }
-                }
-
-                Ok(())
+                Ok(Output {
+                    text: format!("successfully pulled {} secret file(s)", total_files),
+                    json: json!({
+                        "success": true
+                    }),
+                })
             }
         },
         Commands::Push { file } => match file {
             Some(file_name) => {
-                let (_name, file) = config
-                    .files
-                    .iter()
-                    .find(|(key, _)| (**key).eq(&file_name))
-                    .with_context(|| {
-                        format!(
-                            "file \"{}\" not found in \"{}\"",
-                            file_name,
-                            config_path.display()
-                        )
-                    })?;
+                let file = config.files.get(&file_name).with_context(|| {
+                    format!(
+                        "file \"{}\" not found in \"{}\"",
+                        file_name,
+                        config_path.display()
+                    )
+                })?;
 
                 push_secret_file(&fs, secret.as_ref(), working_path, file).await?;
 
-                match args.format {
-                    OutputFormat::Human => {
-                        println!("successfully pushed secret \"{}\"", file_name);
-                    }
-                    OutputFormat::Json => {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&json!({
-                                "success": true
-                            }))?
-                        );
-                    }
-                }
-
-                Ok(())
+                Ok(Output {
+                    text: format!("successfully pushed secret \"{}\"", file_name),
+                    json: json!({
+                        "success": true
+                    }),
+                })
             }
             None => {
                 let files = config.files.values().collect::<Vec<&SecretFile>>();
                 let total_files = files.len();
                 push_secret_files(&fs, secret.as_ref(), working_path, files).await?;
 
-                match args.format {
-                    OutputFormat::Human => {
-                        println!("successfully pushed {} secret file(s)", total_files);
-                    }
-                    OutputFormat::Json => {
-                        println!(
-                            "{}",
-                            serde_json::to_string_pretty(&json!({
-                                "success": true
-                            }))?
-                        );
-                    }
-                }
-
-                Ok(())
+                Ok(Output {
+                    text: format!("successfully pushed {} secret file(s)", total_files),
+                    json: json!({
+                        "success": true
+                    }),
+                })
             }
         },
     }

@@ -1,7 +1,10 @@
-use eyre::{Context, ContextCompat};
-use tokio::fs::create_dir_all;
+//! # Real
+//!
+//! File system backed by the real host file system
 
 use crate::fs::FileSystem;
+use eyre::{Context, ContextCompat};
+use tokio::fs::create_dir_all;
 
 /// File system backed by real files
 pub struct RealFs;

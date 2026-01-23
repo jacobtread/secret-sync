@@ -64,5 +64,5 @@ async fn test_pull_aws_unknown() {
         .arg("pull")
         .assert()
         .failure()
-        .stdout("{\"error\":\"secret \\\"test-secret\\\" not found\"}\n");
+        .stdout("{\"error\":\"secret \\\"test-secret\\\" not found\",\"success\":false}\n");
 }
