@@ -28,7 +28,9 @@ pub struct BackendConfig {
 
 /// Provider to use for secrets
 #[derive(Deserialize, Default, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
 pub enum BackendProvider {
+    /// AWS (Compatible) powered backend
     #[default]
     Aws,
 }
