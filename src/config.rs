@@ -138,11 +138,13 @@ pub async fn read_config_file(path: &Path) -> eyre::Result<Config> {
     let value = tokio::fs::read(path)
         .await
         .context("failed to read config file")?;
-    let extension = path
-        .extension()
-        .context("config file missing extension")?
-        .to_str()
-        .context("invalid file extension")?;
+
+    let extension = match path.extension() {
+        Some(value) => value.to_str().context("invalid file extension")?,
+
+        // Assume TOML when no extension is specified
+        None => return parse_config_file_toml(&value),
+    };
 
     match extension {
         "json" => parse_config_file_json(&value),
