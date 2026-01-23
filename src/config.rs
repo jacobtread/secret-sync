@@ -66,6 +66,7 @@ pub struct SecretFile {
     /// Name of the secret to store / retrieve the file based on
     pub secret: String,
     /// Additional secret metadata to use when pushing secrets
+    #[serde(default)]
     pub metadata: SecretMetadata,
 }
 
