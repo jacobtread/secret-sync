@@ -12,7 +12,7 @@ use std::path::{PathBuf, absolute};
 use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
-pub mod config;
+mod config;
 mod fs;
 mod pull;
 mod push;
@@ -33,6 +33,10 @@ struct Args {
     /// Output format to use when providing command output
     #[arg(short, long, default_value = "human")]
     pub format: OutputFormat,
+
+    /// Disable color in the output
+    #[arg(short, long, default_value_t = false)]
+    pub disable_color: bool,
 }
 
 /// Output format to use when providing program output
@@ -79,7 +83,7 @@ async fn main() -> eyre::Result<()> {
 
                 println!(
                     "{}",
-                    serde_json::to_string_pretty(&json!({
+                    serde_json::to_string(&json!({
                         "error": error.to_string()
                     }))?
                 );
@@ -93,8 +97,10 @@ async fn main() -> eyre::Result<()> {
 }
 
 async fn app(args: Args) -> eyre::Result<()> {
-    // Setup colorful error logging
-    color_eyre::install()?;
+    if !args.disable_color {
+        // Setup colorful error logging
+        color_eyre::install()?;
+    }
 
     let indicatif_layer = IndicatifLayer::new();
 

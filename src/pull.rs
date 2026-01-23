@@ -1,5 +1,4 @@
 use crate::{config::SecretFile, fs::FileSystem, secret::SecretManager};
-use eyre::Context;
 use std::path::Path;
 
 /// Download a secret file from the secret manager
@@ -9,10 +8,7 @@ pub async fn pull_secret_file<Fs: FileSystem>(
     working_path: &Path,
     file: &SecretFile,
 ) -> eyre::Result<()> {
-    let value = secret
-        .get_secret(&file.secret)
-        .await
-        .context("failed to retrieve secret")?;
+    let value = secret.get_secret(&file.secret).await?;
 
     let file_path = if file.path.is_absolute() {
         file.path.clone()

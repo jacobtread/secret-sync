@@ -1,3 +1,4 @@
+use super::Secret;
 use crate::{
     config::{AwsConfig, SecretMetadata},
     secret::SecretManager,
@@ -13,8 +14,6 @@ use aws_sdk_secretsmanager::{
     types::Tag,
 };
 use eyre::Context;
-
-use super::Secret;
 
 pub struct AwsSecretManager {
     client: aws_sdk_secretsmanager::Client,
