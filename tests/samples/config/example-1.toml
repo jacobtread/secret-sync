@@ -1,0 +1,3 @@
+[files.example]
+path = ".env"
+secret = "example"

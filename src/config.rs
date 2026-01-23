@@ -1,14 +1,14 @@
+use eyre::{Context, ContextCompat};
+use serde::Deserialize;
 use std::{
     collections::HashMap,
     env::current_dir,
+    fmt::Debug,
     path::{Path, PathBuf},
 };
 
-use eyre::{Context, ContextCompat};
-use serde::Deserialize;
-
 /// Configuration structure for secret-sync.toml
-#[derive(Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct Config {
     /// Config deciding which backend to use
@@ -20,14 +20,15 @@ pub struct Config {
 }
 
 /// Config around the secrets backend to use
-#[derive(Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, PartialEq, Eq)]
 #[serde(default)]
 pub struct BackendConfig {
+    /// Provider to use
     pub provider: BackendProvider,
 }
 
 /// Provider to use for secrets
-#[derive(Deserialize, Default, Clone, Copy)]
+#[derive(Debug, Deserialize, Default, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum BackendProvider {
     /// AWS (Compatible) powered backend
@@ -36,7 +37,7 @@ pub enum BackendProvider {
 }
 
 /// AWS specific configuration
-#[derive(Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, PartialEq, Eq)]
 pub struct AwsConfig {
     /// AWS profile to use the sdk with
     pub profile: Option<String>,
@@ -52,7 +53,7 @@ pub struct AwsConfig {
 }
 
 /// AWS credentials
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Eq)]
 pub struct AwsCredentials {
     /// AWS access key
     pub access_key_id: String,
@@ -60,8 +61,17 @@ pub struct AwsCredentials {
     pub access_key_secret: String,
 }
 
+impl Debug for AwsCredentials {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AwsCredentials")
+            .field("access_key_id", &"< REDACTED >")
+            .field("access_key_secret", &"< REDACTED >")
+            .finish()
+    }
+}
+
 /// The secret file instance
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct SecretFile {
     /// Path relative to the config file to store the secret at
     pub path: PathBuf,
@@ -72,7 +82,7 @@ pub struct SecretFile {
     pub metadata: SecretMetadata,
 }
 
-#[derive(Deserialize, Default, Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Deserialize, Default, PartialEq, Eq, Clone)]
 #[serde(default)]
 pub struct SecretMetadata {
     /// Optional description of the secret, this will be attached
@@ -152,5 +162,60 @@ pub async fn read_config_file(path: &Path) -> eyre::Result<Config> {
         "json" => parse_config_file_json(&value),
         "toml" => parse_config_file_toml(&value),
         ext => eyre::bail!("unsupported config file extension \"{ext}\""),
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::config::{parse_config_file_json, parse_config_file_toml};
+
+    /// Tests that the example TOML configs can be parsed
+    #[test]
+    fn test_valid_configs_toml() {
+        let configs = &[
+            include_str!("../tests/samples/config/example-1.toml"),
+            include_str!("../tests/samples/config/example-2.toml"),
+            include_str!("../tests/samples/config/example-3.toml"),
+        ];
+
+        for config in configs {
+            _ = parse_config_file_toml(config.as_bytes()).unwrap();
+        }
+    }
+
+    /// Tests that the example JSON configs can be parsed
+    #[test]
+    fn test_valid_configs_json() {
+        let configs = &[
+            include_str!("../tests/samples/config/example-1.json"),
+            include_str!("../tests/samples/config/example-2.json"),
+            include_str!("../tests/samples/config/example-3.json"),
+        ];
+
+        for config in configs {
+            _ = parse_config_file_json(config.as_bytes()).unwrap();
+        }
+    }
+
+    /// Tests that the equivalent configs are both parsable and equal
+    #[test]
+    fn test_valid_configs_equal() {
+        let configs_toml = &[
+            include_str!("../tests/samples/config/example-1.toml"),
+            include_str!("../tests/samples/config/example-2.toml"),
+            include_str!("../tests/samples/config/example-3.toml"),
+        ];
+
+        let configs_json = &[
+            include_str!("../tests/samples/config/example-1.json"),
+            include_str!("../tests/samples/config/example-2.json"),
+            include_str!("../tests/samples/config/example-3.json"),
+        ];
+
+        for (config_toml, config_json) in configs_toml.iter().zip(configs_json.iter()) {
+            let config_toml = parse_config_file_toml(config_toml.as_bytes()).unwrap();
+            let config_json = parse_config_file_json(config_json.as_bytes()).unwrap();
+            assert_eq!(config_toml, config_json);
+        }
     }
 }

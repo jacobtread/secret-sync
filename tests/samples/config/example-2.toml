@@ -1,0 +1,25 @@
+[files.example]
+path = ".env"
+secret = "example"
+
+[files.example-2]
+path = ".env.secondary"
+secret = "example-secondary"
+
+[files.example-3]
+path = ".env.third"
+secret = "example-third"
+metadata = { description = "Example Description"}
+
+[files.example-4]
+path = ".env.forth"
+secret = "example-forth"
+metadata = { description = "Example Description", tags = { "environment" = "Production" } }
+
+[files.example-5]
+path = ".env.fifth"
+secret = "example-fifth"
+
+[files.example-5.metadata]
+description = "Example Description"
+tags = { "environment" = "Production", "test-key" = "test-value" }
