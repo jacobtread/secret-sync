@@ -3,6 +3,7 @@
     "Jacobtread",
     "dotenvy",
     "indicatif",
-    "mockall"
+    "mockall",
+    "loker"
   ]
 }

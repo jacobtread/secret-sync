@@ -12,7 +12,7 @@ use std::path::{PathBuf, absolute};
 use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
-mod config;
+pub mod config;
 mod fs;
 mod pull;
 mod push;
