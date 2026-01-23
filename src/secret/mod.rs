@@ -4,7 +4,7 @@ use mockall::automock;
 
 pub mod aws;
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Secret {
     String(String),
     Binary(Vec<u8>),

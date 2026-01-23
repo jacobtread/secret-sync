@@ -69,7 +69,7 @@ pub struct SecretFile {
     pub metadata: SecretMetadata,
 }
 
-#[derive(Deserialize, Default, Debug)]
+#[derive(Deserialize, Default, Debug, PartialEq, Eq, Clone)]
 #[serde(default)]
 pub struct SecretMetadata {
     /// Optional description of the secret, this will be attached
