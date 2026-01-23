@@ -1,8 +1,4 @@
-use crate::{
-    config::SecretFile,
-    fs::FileSystem,
-    secret::{Secret, SecretManager},
-};
+use crate::{config::SecretFile, fs::FileSystem, secret::SecretManager};
 use eyre::Context;
 use std::path::Path;
 

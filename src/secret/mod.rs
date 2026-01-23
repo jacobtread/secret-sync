@@ -18,7 +18,8 @@ impl Secret {
         }
     }
 
-    pub fn into_bytes(&self) -> Vec<u8> {
+    #[cfg(test)]
+    pub fn into_bytes(self) -> Vec<u8> {
         match self {
             Secret::String(value) => value.clone().into_bytes(),
             Secret::Binary(value) => value.clone(),
