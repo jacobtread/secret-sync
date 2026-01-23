@@ -85,8 +85,11 @@ pub struct SecretMetadata {
     pub tags: Option<HashMap<String, String>>,
 }
 
-/// Name for the secrets config file
-const CONFIG_FILE_NAME: &str = "secret-sync.toml";
+/// Name for the secrets config file (TOML)
+const CONFIG_FILE_NAME_TOML: &str = "secret-sync.toml";
+
+/// Name for the secrets config file (JSON)
+const CONFIG_FILE_NAME_JSON: &str = "secret-sync.json";
 
 /// Searches for the nearest configuration file, checks the current
 /// directory then parent directories one by one until a config is found
@@ -94,14 +97,22 @@ pub async fn discover_nearest_config_file() -> eyre::Result<PathBuf> {
     let mut path: PathBuf = current_dir().context("failed to determine current directory")?;
 
     loop {
-        let config_path = path.join(CONFIG_FILE_NAME);
-
-        if config_path.is_dir() {
+        let config_path_toml = path.join(CONFIG_FILE_NAME_TOML);
+        if config_path_toml.is_dir() {
             eyre::bail!("expected secret-sync.toml to be a file but got a directory");
         }
 
-        if config_path.exists() {
-            return Ok(config_path);
+        if config_path_toml.exists() {
+            return Ok(config_path_toml);
+        }
+
+        let config_path_json = path.join(CONFIG_FILE_NAME_JSON);
+        if config_path_json.is_dir() {
+            eyre::bail!("expected secret-sync.toml to be a file but got a directory");
+        }
+
+        if config_path_json.exists() {
+            return Ok(config_path_json);
         }
 
         let parent = path
@@ -113,8 +124,13 @@ pub async fn discover_nearest_config_file() -> eyre::Result<PathBuf> {
 }
 
 /// Parse a config file from bytes of the TOML file
-fn parse_config_file(file: &[u8]) -> eyre::Result<Config> {
+fn parse_config_file_toml(file: &[u8]) -> eyre::Result<Config> {
     toml::from_slice(file).context("failed to parse config file")
+}
+
+/// Parse a config file from bytes of the JSON file
+fn parse_config_file_json(file: &[u8]) -> eyre::Result<Config> {
+    serde_json::from_slice(file).context("failed to parse config file")
 }
 
 /// Read a TOML config file from the provided `path`
@@ -122,5 +138,15 @@ pub async fn read_config_file(path: &Path) -> eyre::Result<Config> {
     let value = tokio::fs::read(path)
         .await
         .context("failed to read config file")?;
-    parse_config_file(&value)
+    let extension = path
+        .extension()
+        .context("config file missing extension")?
+        .to_str()
+        .context("invalid file extension")?;
+
+    match extension {
+        "json" => parse_config_file_json(&value),
+        "toml" => parse_config_file_toml(&value),
+        ext => eyre::bail!("unsupported config file extension \"{ext}\""),
+    }
 }

@@ -25,7 +25,8 @@ struct Args {
     pub command: Commands,
 
     /// Optional custom path to the secret-sync.toml configuration file. By default
-    /// secret-sync.toml is searched for in each parent directory until discovered
+    /// secret-sync.toml (and secret-sync.json) is searched for in each parent
+    /// directory until discovered
     #[arg(short, long)]
     pub config: Option<PathBuf>,
 
