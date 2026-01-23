@@ -1,7 +1,8 @@
 use crate::{
     config::{AwsConfig, SecretMetadata},
-    secret::SecretManagerImpl,
+    secret::SecretManager,
 };
+use async_trait::async_trait;
 use aws_config::{
     BehaviorVersion, Region,
     meta::region::{ProvideRegion, RegionProviderChain},
@@ -61,7 +62,8 @@ impl AwsSecretManager {
     }
 }
 
-impl SecretManagerImpl for AwsSecretManager {
+#[async_trait]
+impl SecretManager for AwsSecretManager {
     async fn get_secret(&self, name: &str) -> eyre::Result<Secret> {
         let result = match self.client.get_secret_value().secret_id(name).send().await {
             Ok(value) => value,

@@ -9,7 +9,7 @@ use std::path::Path;
 /// Upload a secret file to the secret manager
 pub async fn push_secret_file<Fs: FileSystem>(
     fs: &Fs,
-    secret: &SecretManager,
+    secret: &dyn SecretManager,
     working_path: &Path,
     file: &SecretFile,
 ) -> eyre::Result<()> {
@@ -37,7 +37,7 @@ pub async fn push_secret_file<Fs: FileSystem>(
 /// Upload a collection of secret files to the secret manager
 pub async fn push_secret_files<Fs: FileSystem>(
     fs: &Fs,
-    secret: &SecretManager,
+    secret: &dyn SecretManager,
     working_path: &Path,
     files: Vec<&SecretFile>,
 ) -> eyre::Result<()> {

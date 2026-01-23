@@ -2486,6 +2486,7 @@ dependencies = [
 name = "secret-sync"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "aws-config",
  "aws-sdk-secretsmanager",
  "clap",

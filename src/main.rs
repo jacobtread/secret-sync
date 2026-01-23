@@ -1,9 +1,9 @@
 use crate::{
-    config::{SecretFile, discover_nearest_config_file, read_config_file},
+    config::{BackendProvider, SecretFile, discover_nearest_config_file, read_config_file},
     fs::real::RealFs,
     pull::{pull_secret_file, pull_secret_files},
     push::{push_secret_file, push_secret_files},
-    secret::SecretManager,
+    secret::aws::AwsSecretManager,
 };
 use clap::{Parser, Subcommand, ValueEnum};
 use eyre::{Context, ContextCompat};
@@ -129,7 +129,9 @@ async fn app(args: Args) -> eyre::Result<()> {
 
     let config = read_config_file(&config_path).await?;
 
-    let secret = SecretManager::from_config(&config).await?;
+    let secret = match config.backend.provider {
+        BackendProvider::Aws => Box::new(AwsSecretManager::from_config(&config.aws).await?),
+    };
 
     let working_path = config_path
         .parent()
@@ -154,7 +156,7 @@ async fn app(args: Args) -> eyre::Result<()> {
                         )
                     })?;
 
-                pull_secret_file(&fs, &secret, working_path, file).await?;
+                pull_secret_file(&fs, secret.as_ref(), working_path, file).await?;
 
                 match args.format {
                     OutputFormat::Human => {
@@ -175,7 +177,7 @@ async fn app(args: Args) -> eyre::Result<()> {
             None => {
                 let files = config.files.values().collect::<Vec<&SecretFile>>();
                 let total_files = files.len();
-                pull_secret_files(&fs, &secret, working_path, files).await?;
+                pull_secret_files(&fs, secret.as_ref(), working_path, files).await?;
 
                 match args.format {
                     OutputFormat::Human => {
@@ -208,7 +210,7 @@ async fn app(args: Args) -> eyre::Result<()> {
                         )
                     })?;
 
-                push_secret_file(&fs, &secret, working_path, file).await?;
+                push_secret_file(&fs, secret.as_ref(), working_path, file).await?;
 
                 match args.format {
                     OutputFormat::Human => {
@@ -229,7 +231,7 @@ async fn app(args: Args) -> eyre::Result<()> {
             None => {
                 let files = config.files.values().collect::<Vec<&SecretFile>>();
                 let total_files = files.len();
-                push_secret_files(&fs, &secret, working_path, files).await?;
+                push_secret_files(&fs, secret.as_ref(), working_path, files).await?;
 
                 match args.format {
                     OutputFormat::Human => {

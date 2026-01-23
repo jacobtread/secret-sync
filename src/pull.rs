@@ -9,7 +9,7 @@ use std::path::Path;
 /// Download a secret file from the secret manager
 pub async fn pull_secret_file<Fs: FileSystem>(
     fs: &Fs,
-    secret: &SecretManager,
+    secret: &dyn SecretManager,
     working_path: &Path,
     file: &SecretFile,
 ) -> eyre::Result<()> {
@@ -37,7 +37,7 @@ pub async fn pull_secret_file<Fs: FileSystem>(
 /// Download a collection of files from the secret manager
 pub async fn pull_secret_files<Fs: FileSystem>(
     fs: &Fs,
-    secret: &SecretManager,
+    secret: &dyn SecretManager,
     working_path: &Path,
     files: Vec<&SecretFile>,
 ) -> eyre::Result<()> {
@@ -50,38 +50,34 @@ pub async fn pull_secret_files<Fs: FileSystem>(
 
 #[cfg(test)]
 mod test {
-    use std::path::{Path, PathBuf};
-
-    use mockall::predicate::eq;
-
     use crate::{
         config::{SecretFile, SecretMetadata},
         fs::MockFileSystem,
         pull::pull_secret_file,
-        secret::{MockSecretManagerImpl, Secret, SecretManager},
+        secret::{MockSecretManager, Secret},
     };
+    use mockall::predicate::eq;
+    use std::path::{Path, PathBuf};
 
     #[tokio::test]
     async fn test_pull_secret() {
-        let mut mock_secret = MockSecretManagerImpl::new();
+        let mut secret = MockSecretManager::new();
 
         // Expect the "test" secret to be requested
-        mock_secret
+        secret
             .expect_get_secret()
             .times(1)
             .with(eq("test"))
             .return_once(move |_key| Ok(Secret::String("test".to_string())));
 
-        let mut mock_fs = MockFileSystem::new();
+        let mut fs = MockFileSystem::new();
 
         // Expect the ".env" file to be written to
-        mock_fs
-            .expect_write_file()
+        fs.expect_write_file()
             .times(1)
             .with(eq(Path::new("/.env")), eq("test".to_string().into_bytes()))
             .return_once(move |_path, _value| Ok(()));
 
-        let secret = SecretManager::Mock(mock_secret);
         let working_path = Path::new("/");
         let file = SecretFile {
             path: PathBuf::from(".env"),
@@ -89,18 +85,12 @@ mod test {
             metadata: SecretMetadata::default(),
         };
 
-        pull_secret_file(&mock_fs, &secret, working_path, &file)
+        pull_secret_file(&fs, &secret, working_path, &file)
             .await
             .unwrap();
 
-        // Unpack the secret manager to perform checkpoint
-        let mut mock_secret = match secret {
-            SecretManager::Mock(secret) => secret,
-            _ => panic!("unexpected secret manager in tests"),
-        };
-
         // Ensure expectations are met
-        mock_fs.checkpoint();
-        mock_secret.checkpoint();
+        fs.checkpoint();
+        secret.checkpoint();
     }
 }
