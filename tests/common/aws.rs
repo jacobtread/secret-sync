@@ -5,6 +5,7 @@ use testcontainers::{
     core::{IntoContainerPort, WaitFor},
     runners::AsyncRunner,
 };
+use toml::Table;
 
 const TEST_ENCRYPTION_KEY: &str = "test";
 const TEST_ACCESS_KEY_ID: &str = "test";
@@ -63,19 +64,17 @@ pub fn test_sdk_config(endpoint_url: &str, credentials: Credentials) -> SdkConfi
 
 /// Create a new AWS secrets manager test config from the provided Loker container
 #[allow(dead_code)]
-pub async fn test_config_base(container: &ContainerAsync<GenericImage>) -> String {
+pub async fn test_config_base(container: &ContainerAsync<GenericImage>) -> Table {
     let host = container.get_host().await.unwrap();
     let host_port = container.get_host_port_ipv4(8080).await.unwrap();
     let url = format!("http://{host}:{host_port}");
 
-    format!(
-        r#"
-[aws]
-endpoint = "{url}"
+    toml::toml! {
+        [aws]
+        endpoint = url
 
-[aws.credentials]
-access_key_id = "{TEST_ACCESS_KEY_ID}"
-access_key_secret = "{TEST_ACCESS_KEY_SECRET}"
-    "#
-    )
+        [aws.credentials]
+        access_key_id = TEST_ACCESS_KEY_ID
+        access_key_secret = TEST_ACCESS_KEY_SECRET
+    }
 }

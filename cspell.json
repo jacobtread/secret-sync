@@ -4,6 +4,7 @@
     "dotenvy",
     "indicatif",
     "mockall",
-    "loker"
+    "loker",
+    "testcontainers"
   ]
 }
