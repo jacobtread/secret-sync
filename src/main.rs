@@ -1,14 +1,17 @@
 use crate::{
     config::{BackendProvider, SecretFile, discover_nearest_config_file, read_config_file},
     fs::real::RealFs,
-    pull::{pull_secret_file, pull_secret_files},
-    push::{push_secret_file, push_secret_files},
+    pull::pull_secret_files,
+    push::push_secret_files,
     secret::aws::AwsSecretManager,
 };
 use clap::{Parser, Subcommand, ValueEnum};
 use eyre::{Context, ContextCompat};
 use serde_json::json;
-use std::path::{PathBuf, absolute};
+use std::{
+    collections::HashMap,
+    path::{PathBuf, absolute},
+};
 use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -49,27 +52,35 @@ pub enum OutputFormat {
     Json,
 }
 
+#[derive(clap::Args, Clone)]
+pub struct TargetFilter {
+    /// Optionally specify the specific secret file name
+    #[arg(short, long)]
+    file: Option<String>,
+}
+
 #[derive(Subcommand)]
 pub enum Commands {
     /// Pull the current secrets, storing the secret values
     /// in their respective files
     Pull {
-        /// Optionally specify the specific secret file name
-        #[arg(short, long)]
-        file: Option<String>,
+        #[command(flatten)]
+        filter: TargetFilter,
     },
 
     /// Push a secret file updating its value in the
     /// secret manage
     Push {
-        /// Optionally specify the specific secret file name
-        #[arg(short, long)]
-        file: Option<String>,
+        #[command(flatten)]
+        filter: TargetFilter,
     },
 }
 
+/// Output data for a successful run
 struct Output {
+    /// Text version
     text: String,
+    /// JSON version
     json: serde_json::Value,
 }
 
@@ -110,6 +121,7 @@ async fn main() -> eyre::Result<()> {
     Ok(())
 }
 
+/// Initialize the logging and indicator layers
 fn init_logging() -> eyre::Result<()> {
     let indicatif_layer = IndicatifLayer::new();
 
@@ -137,6 +149,7 @@ fn init_logging() -> eyre::Result<()> {
     Ok(())
 }
 
+/// Main logic entrypoint
 async fn app(args: Args) -> eyre::Result<Output> {
     if !args.disable_color {
         // Setup colorful error logging
@@ -169,69 +182,67 @@ async fn app(args: Args) -> eyre::Result<Output> {
     let fs = RealFs;
 
     match args.command {
-        Commands::Pull { file } => match file {
-            Some(file_name) => {
-                let file = config.files.get(&file_name).with_context(|| {
-                    format!(
-                        "file \"{}\" not found in \"{}\"",
-                        file_name,
-                        config_path.display()
-                    )
-                })?;
+        Commands::Pull { filter } => {
+            let files = filter_files(&config.files, &filter);
 
-                pull_secret_file(&fs, secret.as_ref(), working_path, file).await?;
-
-                Ok(Output {
-                    text: format!("successfully pulled secret \"{}\"", file_name),
-                    json: json!({
-                        "success": true
-                    }),
-                })
+            if files.is_empty() && !config.files.is_empty() {
+                eyre::bail!(
+                    "no files matching filter within \"{}\"",
+                    config_path.display()
+                )
             }
-            None => {
-                let files = config.files.values().collect::<Vec<&SecretFile>>();
-                let total_files = files.len();
-                pull_secret_files(&fs, secret.as_ref(), working_path, files).await?;
 
-                Ok(Output {
-                    text: format!("successfully pulled {} secret file(s)", total_files),
-                    json: json!({
-                        "success": true
-                    }),
-                })
+            let total_files = files.len();
+            pull_secret_files(&fs, secret.as_ref(), working_path, files).await?;
+
+            Ok(Output {
+                text: format!("successfully pulled {} secret file(s)", total_files),
+                json: json!({
+                    "success": true
+                }),
+            })
+        }
+        Commands::Push { filter } => {
+            let files = filter_files(&config.files, &filter);
+
+            if files.is_empty() && !config.files.is_empty() {
+                eyre::bail!(
+                    "no files matching filter within \"{}\"",
+                    config_path.display()
+                )
             }
-        },
-        Commands::Push { file } => match file {
-            Some(file_name) => {
-                let file = config.files.get(&file_name).with_context(|| {
-                    format!(
-                        "file \"{}\" not found in \"{}\"",
-                        file_name,
-                        config_path.display()
-                    )
-                })?;
 
-                push_secret_file(&fs, secret.as_ref(), working_path, file).await?;
+            let total_files = files.len();
+            push_secret_files(&fs, secret.as_ref(), working_path, files).await?;
 
-                Ok(Output {
-                    text: format!("successfully pushed secret \"{}\"", file_name),
-                    json: json!({
-                        "success": true
-                    }),
-                })
-            }
-            None => {
-                let files = config.files.values().collect::<Vec<&SecretFile>>();
-                let total_files = files.len();
-                push_secret_files(&fs, secret.as_ref(), working_path, files).await?;
-
-                Ok(Output {
-                    text: format!("successfully pushed {} secret file(s)", total_files),
-                    json: json!({
-                        "success": true
-                    }),
-                })
-            }
-        },
+            Ok(Output {
+                text: format!("successfully pushed {} secret file(s)", total_files),
+                json: json!({
+                    "success": true
+                }),
+            })
+        }
     }
+}
+
+/// Filter a set of `files` only returning the results that match `filter`
+fn filter_files<'a>(
+    files: &'a HashMap<String, SecretFile>,
+    filter: &TargetFilter,
+) -> Vec<&'a SecretFile> {
+    files
+        .iter()
+        .filter(|(name, _file)| {
+            if filter
+                .file
+                .as_ref()
+                .is_some_and(|file_name| (**name).ne(file_name))
+            {
+                return false;
+            }
+
+            true
+        })
+        .map(|(_key, value)| value)
+        .collect()
 }
