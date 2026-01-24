@@ -1,5 +1,5 @@
 use crate::{
-    config::{BackendProvider, SecretFile, discover_nearest_config_file, read_config_file},
+    config::{BackendProvider, Config, SecretFile, discover_nearest_config_file, read_config_file},
     fs::real::RealFs,
     pull::pull_secret_files,
     push::push_secret_files,
@@ -10,6 +10,7 @@ use eyre::{Context, ContextCompat};
 use serde_json::json;
 use std::{
     collections::HashMap,
+    env::current_dir,
     path::{PathBuf, absolute},
 };
 use tracing_indicatif::IndicatifLayer;
@@ -85,6 +86,34 @@ enum Commands {
     Push {
         #[command(flatten)]
         filter: TargetFilter,
+    },
+
+    /// Perform a quick pull without a configuration file
+    ///
+    /// A configuration file is not required for this subcommand
+    /// but will be respected if provided or found.
+    QuickPull {
+        /// Path to the file to pull the secret into
+        #[arg(short, long)]
+        path: PathBuf,
+
+        /// Secret to pull from
+        #[arg(short, long)]
+        secret: String,
+    },
+
+    /// Perform a quick push without requiring a configuration file
+    ///
+    /// A configuration file is not required for this subcommand
+    /// but will be respected if provided or found.
+    QuickPush {
+        /// Path to the file to pull the secret into
+        #[arg(short, long)]
+        path: PathBuf,
+
+        /// Secret to pull from
+        #[arg(short, long)]
+        secret: String,
     },
 }
 
@@ -170,16 +199,48 @@ async fn app(args: Args) -> eyre::Result<Output> {
 
     init_logging()?;
 
-    let config_path = match args.config {
-        Some(value) => value,
-        None => discover_nearest_config_file().await?,
+    let (config_path, working_path, mut config) = match &args.command {
+        Commands::Pull { .. } | Commands::Push { .. } => {
+            let config_path = match args.config {
+                Some(value) => value,
+                None => discover_nearest_config_file().await?,
+            };
+
+            let config_path =
+                absolute(config_path).context("failed to get absolute config path")?;
+
+            tracing::debug!(?config_path, "found config file");
+
+            let working_path = config_path
+                .parent()
+                .context("missing config parent path unable to use directory for context")?
+                .to_path_buf();
+
+            tracing::debug!(?working_path, "working path");
+
+            let config = read_config_file(&config_path).await?;
+            (config_path, working_path, config)
+        }
+        Commands::QuickPull { .. } | Commands::QuickPush { .. } => {
+            let current_path = current_dir().context("failed to determine current directory")?;
+
+            let config_path = match args.config {
+                Some(value) => Some(value),
+                None => discover_nearest_config_file().await.ok(),
+            };
+
+            let config = match &config_path {
+                Some(path) => read_config_file(path).await?,
+                None => Config::default(),
+            };
+
+            (
+                config_path.unwrap_or(current_path.clone()),
+                current_path,
+                config,
+            )
+        }
     };
-
-    let config_path = absolute(config_path).context("failed to get absolute config path")?;
-
-    tracing::debug!(?config_path, "found config file");
-
-    let mut config = read_config_file(&config_path).await?;
 
     if let Some(profile) = args.profile {
         config.aws.profile = Some(profile);
@@ -192,12 +253,6 @@ async fn app(args: Args) -> eyre::Result<Output> {
     let secret = match config.backend.provider {
         BackendProvider::Aws => Box::new(AwsSecretManager::from_config(&config.aws).await?),
     };
-
-    let working_path = config_path
-        .parent()
-        .context("missing config parent path unable to use directory for context")?;
-
-    tracing::debug!(?working_path, "working path");
 
     let fs = RealFs;
 
@@ -213,7 +268,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
             }
 
             let total_files = files.len();
-            pull_secret_files(&fs, secret.as_ref(), working_path, files).await?;
+            pull_secret_files(&fs, secret.as_ref(), &working_path, files).await?;
 
             Ok(Output {
                 text: format!("successfully pulled {} secret file(s)", total_files),
@@ -222,6 +277,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
                 }),
             })
         }
+
         Commands::Push { filter } => {
             let files = filter_files(&config.files, &filter);
 
@@ -233,10 +289,50 @@ async fn app(args: Args) -> eyre::Result<Output> {
             }
 
             let total_files = files.len();
-            push_secret_files(&fs, secret.as_ref(), working_path, files).await?;
+            push_secret_files(&fs, secret.as_ref(), &working_path, files).await?;
 
             Ok(Output {
                 text: format!("successfully pushed {} secret file(s)", total_files),
+                json: json!({
+                    "success": true
+                }),
+            })
+        }
+
+        Commands::QuickPull {
+            path,
+            secret: secret_value,
+        } => {
+            let file = SecretFile {
+                secret: secret_value,
+                path,
+                metadata: Default::default(),
+            };
+
+            pull_secret_files(&fs, secret.as_ref(), &working_path, vec![&file]).await?;
+
+            Ok(Output {
+                text: "successfully pulled 1 secret file(s)".to_string(),
+                json: json!({
+                    "success": true
+                }),
+            })
+        }
+
+        Commands::QuickPush {
+            path,
+            secret: secret_value,
+        } => {
+            let file = SecretFile {
+                secret: secret_value,
+                path,
+                metadata: Default::default(),
+            };
+
+            push_secret_files(&fs, secret.as_ref(), &working_path, vec![&file]).await?;
+
+            Ok(Output {
+                text: "successfully pushed 1 secret file(s)".to_string(),
                 json: json!({
                     "success": true
                 }),
