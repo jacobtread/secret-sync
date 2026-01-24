@@ -27,7 +27,7 @@ pub async fn pull_secret_files<Fs: FileSystem>(
     fs: &Fs,
     secret: &dyn SecretManager,
     working_path: &Path,
-    files: Vec<&SecretFile>,
+    files: impl IntoIterator<Item = &SecretFile>,
 ) -> eyre::Result<()> {
     for file in files {
         pull_secret_file(fs, secret, working_path, file).await?;
@@ -139,7 +139,7 @@ mod test {
                 .return_once(move |_path, _value| Ok(()));
         }
 
-        pull_secret_files(&fs, &secret, working_path, test_secrets.iter().collect())
+        pull_secret_files(&fs, &secret, working_path, &test_secrets)
             .await
             .unwrap();
 

@@ -315,7 +315,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
                 metadata: Default::default(),
             };
 
-            pull_secret_files(&fs, secret.as_ref(), &working_path, vec![&file]).await?;
+            pull_secret_files(&fs, secret.as_ref(), &working_path, [&file]).await?;
 
             Ok(Output {
                 text: "successfully pulled 1 secret file(s)".to_string(),
@@ -333,7 +333,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
                 metadata: Default::default(),
             };
 
-            push_secret_files(&fs, secret.as_ref(), &working_path, vec![&file]).await?;
+            push_secret_files(&fs, secret.as_ref(), &working_path, [&file]).await?;
 
             Ok(Output {
                 text: "successfully pushed 1 secret file(s)".to_string(),
