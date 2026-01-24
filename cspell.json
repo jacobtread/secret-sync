@@ -5,6 +5,7 @@
     "indicatif",
     "mockall",
     "loker",
-    "testcontainers"
+    "testcontainers",
+    "indexmap"
   ]
 }

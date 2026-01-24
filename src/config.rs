@@ -4,9 +4,9 @@
 //! to configuration files.
 
 use eyre::{Context, ContextCompat};
+use indexmap::IndexMap;
 use serde::Deserialize;
 use std::{
-    collections::HashMap,
     env::current_dir,
     fmt::Debug,
     path::{Path, PathBuf},
@@ -21,7 +21,7 @@ pub struct Config {
     /// AWS specific configuration
     pub aws: AwsConfig,
     /// The secret files to operate on
-    pub files: HashMap<String, SecretFile>,
+    pub files: IndexMap<String, SecretFile>,
 }
 
 /// Config around the secrets backend to use
@@ -100,7 +100,7 @@ pub struct SecretMetadata {
     /// Optional tags to attach to the secret (AWS Backend)
     ///
     /// Will only be used on the first creation push
-    pub tags: Option<HashMap<String, String>>,
+    pub tags: Option<IndexMap<String, String>>,
 }
 
 /// Name for the secrets config file (TOML)

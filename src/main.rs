@@ -11,9 +11,9 @@ use crate::{
 };
 use clap::{Parser, Subcommand, ValueEnum};
 use eyre::{Context, ContextCompat};
+use indexmap::IndexMap;
 use serde_json::json;
 use std::{
-    collections::HashMap,
     env::current_dir,
     path::{PathBuf, absolute},
 };
@@ -345,7 +345,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
 
 /// Filter a set of `files` only returning the results that match `filter`
 fn filter_files<'a>(
-    files: &'a HashMap<String, SecretFile>,
+    files: &'a IndexMap<String, SecretFile>,
     filter: &TargetFilter,
 ) -> Vec<&'a SecretFile> {
     files
