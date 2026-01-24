@@ -282,9 +282,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
 
             Ok(Output {
                 text: format!("successfully pulled {} secret file(s)", total_files),
-                json: json!({
-                    "success": true
-                }),
+                json: json!({ "success": true }),
             })
         }
 
@@ -303,9 +301,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
 
             Ok(Output {
                 text: format!("successfully pushed {} secret file(s)", total_files),
-                json: json!({
-                    "success": true
-                }),
+                json: json!({ "success": true }),
             })
         }
 
@@ -323,9 +319,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
 
             Ok(Output {
                 text: "successfully pulled 1 secret file(s)".to_string(),
-                json: json!({
-                    "success": true
-                }),
+                json: json!({ "success": true }),
             })
         }
 
@@ -343,9 +337,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
 
             Ok(Output {
                 text: "successfully pushed 1 secret file(s)".to_string(),
-                json: json!({
-                    "success": true
-                }),
+                json: json!({ "success": true }),
             })
         }
     }
