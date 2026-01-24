@@ -71,10 +71,14 @@ enum OutputFormat {
 #[derive(clap::Args, Clone)]
 struct TargetFilter {
     /// Optionally specify file names to match
+    ///
+    /// This argument can be specified multiple times to target multiple files
     #[arg(short, long)]
     file: Option<Vec<String>>,
 
     /// Optionally specify globs for file names to match
+    ///
+    /// This argument  can be specified multiple times to target multiple globs
     #[arg(short, long)]
     glob: Option<Vec<String>>,
 }
