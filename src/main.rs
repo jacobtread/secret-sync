@@ -17,6 +17,7 @@ use std::{
     env::current_dir,
     path::{PathBuf, absolute},
 };
+use tracing::level_filters::LevelFilter;
 use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -55,6 +56,10 @@ struct Args {
     /// Optionally override the AWS region
     #[arg(short, long)]
     region: Option<String>,
+
+    /// Enable verbose logging output
+    #[arg(short, long, default_value_t = false)]
+    verbose: bool,
 }
 
 /// Output format to use when providing program output
@@ -177,20 +182,26 @@ async fn main() -> eyre::Result<()> {
 }
 
 /// Initialize the logging and indicator layers
-fn init_logging() -> eyre::Result<()> {
+fn init_logging(verbose: bool) -> eyre::Result<()> {
     let indicatif_layer = IndicatifLayer::new();
 
+    let env_filter = if verbose {
+        EnvFilter::builder()
+            .with_default_directive(LevelFilter::DEBUG.into())
+            .from_env_lossy()
+    } else {
+        EnvFilter::from_default_env()
+            // Provide logging from secret-sync by default
+            .add_directive("secret_sync=info".parse()?)
+            //
+            .add_directive("aws_sdk_secretsmanager=info".parse()?)
+            .add_directive("aws_runtime=info".parse()?)
+            .add_directive("aws_smithy_runtime=info".parse()?)
+            .add_directive("hyper_util=info".parse()?)
+    };
+
     tracing_subscriber::registry()
-        .with(
-            EnvFilter::from_default_env()
-                // Provide logging from secret-sync by default
-                .add_directive("secret_sync=info".parse()?)
-                //
-                .add_directive("aws_sdk_secretsmanager=info".parse()?)
-                .add_directive("aws_runtime=info".parse()?)
-                .add_directive("aws_smithy_runtime=info".parse()?)
-                .add_directive("hyper_util=info".parse()?),
-        )
+        .with(env_filter)
         .with(
             tracing_subscriber::fmt::layer()
                 .with_line_number(false)
@@ -211,7 +222,7 @@ async fn app(args: Args) -> eyre::Result<Output> {
         color_eyre::install()?;
     }
 
-    init_logging()?;
+    init_logging(args.verbose)?;
 
     let (config_path, working_path, mut config) = match &args.command {
         Commands::Pull { .. } | Commands::Push { .. } => {
