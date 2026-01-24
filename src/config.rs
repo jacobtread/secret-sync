@@ -1,3 +1,8 @@
+//! # Config
+//!
+//! Configuration structures, parsing, and locating logic related
+//! to configuration files.
+
 use eyre::{Context, ContextCompat};
 use serde::Deserialize;
 use std::{
@@ -82,6 +87,7 @@ pub struct SecretFile {
     pub metadata: SecretMetadata,
 }
 
+/// Metadata to use with a secret file
 #[derive(Debug, Deserialize, Default, PartialEq, Eq, Clone)]
 #[serde(default)]
 pub struct SecretMetadata {

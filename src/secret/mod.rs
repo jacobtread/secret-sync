@@ -1,3 +1,10 @@
+//! # Secret Manager
+//!
+//! This module contains a secret manager implementation generalizing the behavior
+//! a secret manager must have so that it is abstracted for pulling and pushing.
+//!
+//! - [`aws`] AWS Compatible secret manager backend
+
 use crate::config::SecretMetadata;
 use async_trait::async_trait;
 use mockall::automock;

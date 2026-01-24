@@ -1,3 +1,7 @@
+#![doc = include_str!("../README.md")]
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
+
 use crate::{
     config::{BackendProvider, Config, SecretFile, discover_nearest_config_file, read_config_file},
     fs::real::RealFs,
@@ -22,9 +26,11 @@ mod pull;
 mod push;
 mod secret;
 
+/// The arguments for the CLI tool
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
+    /// The desired sub command
     #[command(subcommand)]
     command: Commands,
 
@@ -61,6 +67,7 @@ enum OutputFormat {
     Json,
 }
 
+/// Filters for target secret folders
 #[derive(clap::Args, Clone)]
 struct TargetFilter {
     /// Optionally specify file names to match
@@ -72,6 +79,7 @@ struct TargetFilter {
     glob: Option<Vec<String>>,
 }
 
+/// Sub commands for the cli tool
 #[derive(Subcommand)]
 enum Commands {
     /// Pull the current secrets, storing the secret values
@@ -125,6 +133,8 @@ struct Output {
     json: serde_json::Value,
 }
 
+/// Main app entrypoint, handles ensuring the [app] return type
+/// matches the requested output format
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
     let args = Args::parse();
