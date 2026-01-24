@@ -25,26 +25,34 @@ mod secret;
 #[command(version, about, long_about = None)]
 struct Args {
     #[command(subcommand)]
-    pub command: Commands,
+    command: Commands,
 
     /// Optional custom path to the secret-sync.toml configuration file. By default
     /// secret-sync.toml (and secret-sync.json) is searched for in each parent
     /// directory until discovered
     #[arg(short, long)]
-    pub config: Option<PathBuf>,
+    config: Option<PathBuf>,
 
     /// Output format to use when providing command output
     #[arg(short, long, default_value = "human")]
-    pub format: OutputFormat,
+    format: OutputFormat,
 
     /// Disable color in the output
     #[arg(short, long, default_value_t = false)]
-    pub disable_color: bool,
+    disable_color: bool,
+
+    /// Override AWS profile to use the sdk with
+    #[arg(long)]
+    profile: Option<String>,
+
+    /// Optionally override the AWS region
+    #[arg(short, long)]
+    region: Option<String>,
 }
 
 /// Output format to use when providing program output
 #[derive(ValueEnum, Clone)]
-pub enum OutputFormat {
+enum OutputFormat {
     /// Provide output in human readable format
     Human,
 
@@ -53,7 +61,7 @@ pub enum OutputFormat {
 }
 
 #[derive(clap::Args, Clone)]
-pub struct TargetFilter {
+struct TargetFilter {
     /// Optionally specify file names to match
     #[arg(short, long)]
     file: Option<Vec<String>>,
@@ -64,7 +72,7 @@ pub struct TargetFilter {
 }
 
 #[derive(Subcommand)]
-pub enum Commands {
+enum Commands {
     /// Pull the current secrets, storing the secret values
     /// in their respective files
     Pull {
@@ -171,7 +179,15 @@ async fn app(args: Args) -> eyre::Result<Output> {
 
     tracing::debug!(?config_path, "found config file");
 
-    let config = read_config_file(&config_path).await?;
+    let mut config = read_config_file(&config_path).await?;
+
+    if let Some(profile) = args.profile {
+        config.aws.profile = Some(profile);
+    }
+
+    if let Some(region) = args.region {
+        config.aws.region = Some(region);
+    }
 
     let secret = match config.backend.provider {
         BackendProvider::Aws => Box::new(AwsSecretManager::from_config(&config.aws).await?),
