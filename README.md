@@ -14,15 +14,20 @@ CLI tool for syncing local secret files with remote secret managers
 Usage: secret-sync.exe [OPTIONS] <COMMAND>
 
 Commands:
-  pull  Pull the current secrets, storing the secret values in their respective files
-  push  Push a secret file updating its value in the secret manage
-  help  Print this message or the help of the given subcommand(s)
+  pull        Pull the current secrets, storing the secret values in their respective files
+  push        Push a secret file updating its value in the secret manage
+  quick-pull  Perform a quick pull without a configuration file
+  quick-push  Perform a quick push without requiring a configuration file
+  help        Print this message or the help of the given subcommand(s)
 
 Options:
-  -c, --config <CONFIG>  Optional custom path to the secret-sync.toml configuration file. By default secret-sync.toml (and secret-sync.json) is searched for in each parent directory until discovered
-  -f, --format <FORMAT>  Output format to use when providing command output [default: human] [possible values: human, json]
-  -h, --help             Print help (see more with '--help')
-  -V, --version          Print version
+  -c, --config <CONFIG>    Optional custom path to the secret-sync.toml configuration file. By default secret-sync.toml (and secret-sync.json) is searched for in each parent directory until discovered
+  -f, --format <FORMAT>    Output format to use when providing command output [default: human] [possible values: human, json]
+  -d, --disable-color      Disable color in the output
+      --profile <PROFILE>  Override AWS profile to use the sdk with
+  -r, --region <REGION>    Optionally override the AWS region
+  -h, --help               Print help (see more with '--help')
+  -V, --version            Print version
 ```
 
 ## Installation
