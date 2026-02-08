@@ -37,10 +37,10 @@ color-eyre = "=0.6.5"
 tracing-indicatif = "0.3.13"
 
 # AWS configuration
-aws-config = { version = "=1.8.12", features = ["behavior-version-latest"] }
+aws-config = { version = "=1.8.13", features = ["behavior-version-latest"] }
 
 # AWS Secrets Manager SDK
-aws-sdk-secretsmanager = "=1.98.0"
+aws-sdk-secretsmanager = "=1.99.0"
 
 # Serialization
 serde = { version = "=1.0.228", features = ["derive"] }
@@ -58,7 +58,7 @@ indexmap = { version = "2.13.0", features = ["serde"] }
 
 [dev-dependencies]
 # Test containers for integration tests
-testcontainers = "=0.26.3"
+testcontainers = "=0.27.0"
 # Temporary file paths
 tempfile = "3.24.0"
 # Command line assertions for tests
