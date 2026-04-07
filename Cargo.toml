@@ -1,6 +1,6 @@
 [package]
 name = "secret-sync"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "CLI tool for syncing local secret files with remote secret managers"
 authors = ["Jacobtread <jacobtread@gmail.com>"]
@@ -17,52 +17,52 @@ eula = false
 
 [dependencies]
 # Command line parser
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.6.0", features = ["derive"] }
 
 # Asynchronous runtime & Helpers
-tokio = { version = "=1.49.0", features = ["full"] }
+tokio = { version = "=1.51.0", features = ["full"] }
 
 # Async in traits for dynamic dispatch
 async-trait = "0.1.89"
 
 # Logging
 tracing = "=0.1.44"
-tracing-subscriber = { version = "=0.3.22", features = ["env-filter"] }
+tracing-subscriber = { version = "=0.3.23", features = ["env-filter"] }
 
 # Error handling
 eyre = "=0.6.12"
 color-eyre = "=0.6.5"
 
 # Tracing progress indicator
-tracing-indicatif = "0.3.13"
+tracing-indicatif = "0.3.14"
 
 # AWS configuration
-aws-config = { version = "=1.8.13", features = ["behavior-version-latest"] }
+aws-config = { version = "=1.8.15", features = ["behavior-version-latest"] }
 
 # AWS Secrets Manager SDK
-aws-sdk-secretsmanager = "=1.99.0"
+aws-sdk-secretsmanager = "=1.103.0"
 
 # Serialization
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_json = "=1.0.149"
-toml = { version = "=0.9.11", features = ["preserve_order"] }
+toml = { version = "=1.1.2", features = ["preserve_order"] }
 
 # Automatic mock generation for tests
 mockall = "0.14.0"
 
 # Glob matching
-fast-glob = "1.0.0"
+fast-glob = "1.0.1"
 
 # Map that preserves insertion order
-indexmap = { version = "2.13.0", features = ["serde"] }
+indexmap = { version = "2.13.1", features = ["serde"] }
 
 [dev-dependencies]
 # Test containers for integration tests
-testcontainers = "=0.27.0"
+testcontainers = "=0.27.2"
 # Temporary file paths
-tempfile = "3.24.0"
+tempfile = "3.27.0"
 # Command line assertions for tests
-assert_cmd = "2.1.2"
+assert_cmd = "2.2.0"
 
 # The profile that 'dist' will build with
 [profile.dist]

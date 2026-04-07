@@ -6,6 +6,7 @@
     "mockall",
     "loker",
     "testcontainers",
-    "indexmap"
+    "indexmap",
+    "serde"
   ]
 }
