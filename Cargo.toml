@@ -20,7 +20,7 @@ eula = false
 clap = { version = "4.6.0", features = ["derive"] }
 
 # Asynchronous runtime & Helpers
-tokio = { version = "=1.51.0", features = ["full"] }
+tokio = { version = "=1.52.1", features = ["full"] }
 
 # Async in traits for dynamic dispatch
 async-trait = "0.1.89"
