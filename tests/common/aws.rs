@@ -14,7 +14,7 @@ const TEST_ACCESS_KEY_SECRET: &str = "test";
 /// Create a new [Loker](https://github.com/jacobtread/loker) container for testing
 #[allow(dead_code)]
 pub async fn test_loker_container() -> ContainerAsync<GenericImage> {
-    GenericImage::new("jacobtread/loker", "0.2.2")
+    GenericImage::new("jacobtread/loker", "0.2.4")
         .with_exposed_port(8080.tcp())
         .with_wait_for(WaitFor::seconds(5))
         .with_env_var("SM_ENCRYPTION_KEY", TEST_ENCRYPTION_KEY)
