@@ -23,3 +23,5 @@ install-updater = true
 publish-jobs = ["npm", "homebrew"]
 # A GitHub repo to push Homebrew formulas to
 tap = "jacobtread/homebrew-tap"
+
+allow-dirty = ["ci"]
